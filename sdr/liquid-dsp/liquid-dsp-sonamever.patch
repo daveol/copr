@@ -1,0 +1,33 @@
+diff --git a/makefile.in b/makefile.in
+index 4c30d411..fff87312 100644
+--- a/makefile.in
++++ b/makefile.in
+@@ -1174,8 +1174,14 @@ libliquid.dylib: $(objects)
+ 	$(CC) -dynamiclib -install_name $@ -o $@ $^ $(LDFLAGS) $(LIBS)
+ 
+ # linux, et al
+-libliquid.so: libliquid.a
+-	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Xlinker -soname=$@ -o $@ -Wl,-whole-archive $^ -Wl,-no-whole-archive $(LIBS)
++libliquid.so.$(VERSION): $(objects)
++	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Xlinker -soname=$(SHARED_LIB).0 -o $@ -Wl,-whole-archive $^ -Wl,-no-whole-archive $(LIBS)
++
++libliquid.so.0: libliquid.so.$(VERSION)
++	ln -s libliquid.so.$(VERSION) $@
++
++libliquid.so: libliquid.so.$(VERSION) libliquid.so.0
++	ln -s libliquid.so.$(VERSION) $@
+ 
+ all: libliquid.a $(SHARED_LIB)
+ 
+@@ -1195,9 +1201,9 @@ help:
+ install: all
+ 	@echo "installing..."
+ 	@echo ""
+-	mkdir -p $(DESTDIR)$(exec_prefix)$(libdir)
++	mkdir -p $(DESTDIR)$(libdir)
+ 	mkdir -p $(DESTDIR)$(prefix)/include/liquid
+-	install -m 644 -p $(SHARED_LIB) libliquid.a $(DESTDIR)$(exec_prefix)$(libdir)
++	install -m 755 -p $(SHARED_LIB)* $(DESTDIR)$(libdir)
+ 	install -m 644 -p $(addprefix include/,$(headers_install)) $(DESTDIR)$(prefix)/include/liquid
+ 	@echo ""
+ 	@echo "---------------------------------------------------------"
