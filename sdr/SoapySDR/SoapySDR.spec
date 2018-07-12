@@ -1,6 +1,6 @@
 Name:           SoapySDR
 Version:        0.6.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Vendor and platform neutral SDR support library
 
 License:        Boost
@@ -11,7 +11,6 @@ BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  cmake
 BuildRequires:  swig
-BuildRequires:  python2-devel
 BuildRequires:  python3-devel
 
 %description
@@ -27,13 +26,6 @@ Summary:        The development files for %{name}
 
 %description -n lib%{name}-devel
 This package contains development files for the libraries of %{name}
-
-%package -n python2-%{name}
-Summary:        Python2 bindings for %{name}
-%{?python_provide:%python_provide python2-%{name}}
-
-%description -n python2-%{name}
-These are the python2 bindings for %{name}
 
 %package -n python3-%{name}
 Summary:        Python2 bindings for %{name}
@@ -60,26 +52,20 @@ These are the python2 bindings for %{name}
 %files
 %license LICENSE_1_0.txt
 %doc Changelog.txt
-%{_bindir}/*
-%{_mandir}/man1/*
-
-%files -n python2-%{name}
-%{python2_sitearch}/*%{name}*
+%{_bindir}/%{name}Util
+%{_mandir}/man1/%{name}Util*
 
 %files -n python3-%{name}
-%{python3_sitearch}/*%{name}*
+%{python3_sitearch}/_%{name}.so
+%{python3_sitearch}/%{name}.py
 %{python3_sitearch}/__pycache__/*
 
 %files -n lib%{name}
-%{_libdir}/*.so.*
+%{_libdir}/lib%{name}.so.0.6.1
+%{_libdir}/lib%{name}.so.0.6
 
 %files -n lib%{name}-devel
-%{_includedir}/*
-%{_libdir}/*.so
-%{_libdir}/pkgconfig/*pc
-%{_datarootdir}/cmake/*
-
-
-%changelog
-* Mon Jun 25 2018 Dave Olsthoorn <dave@bewaar.me> - 0.6.1-1
-- Initial spec file
+%{_includedir}/%{name}
+%{_libdir}/lib%{name}.so
+%{_libdir}/pkgconfig/%{name}.pc
+%{_datarootdir}/cmake/%{name}
