@@ -1,12 +1,12 @@
-%global gitname SoapyRemote
-%global tagname soapy-remote
+%global gitname SoapyUHD
+%global tagname soapy-uhd
 
-Name:           SoapySDR-remote
-Version:        0.4.3
+Name:           SoapySDR-uhd
+Version:        0.3.4
 Release:        1%{?dist}
-Summary:        Use any Soapy SDR remotely
+Summary:        Soapy SDR plugins for UHD supported SDR devices
 
-License:        Boost
+License:        GPLv3
 URL:            https://github.com/pothosware/%{gitname}/wiki
 Source0:        https://github.com/pothosware/%{gitname}/archive/%{tagname}-%{version}.tar.gz
 
@@ -16,8 +16,8 @@ BuildRequires:  gcc-c++
 BuildRequires:  cmake
 # Libraries
 BuildRequires:  cmake(SoapySDR)
-BuildRequires:  avahi-devel
-BuildRequires:  systemd
+BuildRequires:  cmake(UHD)
+BuildRequires:  boost-devel
 
 %description
 A server that enables clients to use its Soapy SDR devices
@@ -35,14 +35,9 @@ A server that enables clients to use its Soapy SDR devices
 %install
 %make_install
 
-%post
-%sysctl_apply SoapySDRServer.conf
 
 %files
-%license LICENSE_1_0.txt
+%license COPYING
 %doc Changelog.txt
-%{_bindir}/*
-%{_mandir}/man1/*
-%{_sysctldir}/SoapySDRServer.conf
-%{_unitdir}/SoapySDRServer.service
 %{_libdir}/SoapySDR/modules0.6/*
+%{_libdir}/uhd/modules/*
