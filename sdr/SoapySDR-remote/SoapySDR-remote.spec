@@ -3,7 +3,7 @@
 
 Name:           SoapySDR-remote
 Version:        0.4.3
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Use any Soapy SDR remotely (client)
 
 License:        Boost
