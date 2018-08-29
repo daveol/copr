@@ -8,7 +8,7 @@ Summary:        GNU Binutils for cross-compilation for %{esp32_target} target
 License:        GPLv2+ and GPLv3+ and LGPLv2+ and BSD
 URL:            https://github.com/espressif/crosstool-NG
 
-Source0:        ftp://ftp.gnu.org/pub/gnu/binutils/binutils-%{version}.tar.gz
+Source0:        https://ftp.gnu.org/pub/gnu/binutils/binutils-%{version}.tar.gz
 # Overlay from: https://github.com/espressif/crosstool-NG
 Source1:        xtensa_esp32.tar
 
