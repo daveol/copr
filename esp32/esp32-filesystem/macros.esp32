@@ -1,0 +1,9 @@
+%esp32_target		xtensa-esp32-elf
+
+%esp32_prefix		%{_prefix}/%{esp32_target}
+%esp32_bindir		%{esp32_prefix}/bin
+%esp32_libdir		%{esp32_prefix}/lib
+%esp32_includedir	%{esp32_prefix}/include
+%esp32_datadir		%{esp32_prefix}/share
+
+%esp32_sysroot		%{esp32_prefix}/sys-root
