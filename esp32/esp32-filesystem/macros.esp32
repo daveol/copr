@@ -5,5 +5,3 @@
 %esp32_libdir		%{esp32_prefix}/lib
 %esp32_includedir	%{esp32_prefix}/include
 %esp32_datadir		%{esp32_prefix}/share
-
-%esp32_sysroot		%{esp32_prefix}/sys-root

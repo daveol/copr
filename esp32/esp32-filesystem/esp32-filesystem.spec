@@ -4,7 +4,7 @@
 
 Name:           esp32-filesystem
 Version:        1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        filesystem and macros for %{target} cross-compilation tools
 
 License:        MIT
@@ -31,7 +31,6 @@ mkdir -p "%{buildroot}%{_prefix}/%{target}/bin"
 mkdir -p "%{buildroot}%{_prefix}/%{target}/lib"
 mkdir -p "%{buildroot}%{_prefix}/%{target}/include"
 mkdir -p "%{buildroot}%{_prefix}/%{target}/share"
-mkdir -p "%{buildroot}%{_prefix}/%{target}/sys-root"
 
 mkdir -p "%{buildroot}%{macrosdir}"
 install -m 644 %{SOURCE0} %{buildroot}%{macrosdir}
@@ -42,12 +41,14 @@ install -m 644 %{SOURCE0} %{buildroot}%{macrosdir}
 %dir %{_prefix}/%{target}/lib
 %dir %{_prefix}/%{target}/include
 %dir %{_prefix}/%{target}/share
-%dir %{_prefix}/%{target}/sys-root
 %{macrosdir}/macros.esp32
 
 
 
 %changelog
+* Thu Aug 30 2018 Dave Olsthoorn <dave@bewaar.me> - 1-2
+- Remove esp32_sysroot, we'll now use esp32_prefix as sysroot
+
 * Wed Aug 29 2018 Dave Olsthoorn <dave@bewaar.me> - 1-1
 - Initial specfile
 
