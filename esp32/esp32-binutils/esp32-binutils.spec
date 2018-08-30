@@ -2,7 +2,7 @@
 
 Name:           esp32-binutils
 Version:        2.25.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        GNU Binutils for cross-compilation for %{esp32_target} target
 
 License:        GPLv2+ and GPLv3+ and LGPLv2+ and BSD
@@ -41,6 +41,7 @@ BuildRequires:  esp32-filesystem
 Requires:       esp32-filesystem
 
 %description
+TODO: write description
 
 
 %prep
@@ -58,7 +59,7 @@ tar --strip-components=1 -xv -f %{SOURCE1} binutils
 	--disable-gold \
 	--disable-werror \
 	--disable-nls \
-	--with-sysroot=%{esp32_sysroot} \
+	--with-sysroot=%{esp32_prefix} \
 	--with-pkgversion="Fedora %{version}-%{release}" \
 	--with-bugurl="https://bugzilla.redhat.com/"
 
@@ -81,5 +82,8 @@ rm -rf %{buildroot}%{_infodir}
 
 
 %changelog
+* Thu Aug 30 2018 Dave Olsthoorn <dave@bewaar.me> - 2.25.1-2
+- Rebuilt for esp32-filesystem bump
+
 * Tue Aug 28 2018 Dave Olsthoorn <dave@bewaar.me> - 2.25.1-1
 - Initial spec file
