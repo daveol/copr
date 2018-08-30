@@ -1,0 +1,82 @@
+From 9c1d6131313d822df4f6df89a506946ed8148371 Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Tue, 6 Dec 2016 19:13:06 +0800
+Subject: [PATCH 20/22] math: enable __ieee754_remainder[f], __ieee754_fmod[f]
+ for Xtensa
+
+---
+ newlib/libm/math/e_fmod.c       | 2 +-
+ newlib/libm/math/e_remainder.c  | 4 ++--
+ newlib/libm/math/ef_fmod.c      | 2 +-
+ newlib/libm/math/ef_remainder.c | 4 ++--
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/newlib/libm/math/e_fmod.c b/newlib/libm/math/e_fmod.c
+index 57ad26412..af67bb316 100644
+--- a/newlib/libm/math/e_fmod.c
++++ b/newlib/libm/math/e_fmod.c
+@@ -18,7 +18,7 @@
+ /* __ieee754_remainder is provided by libgcc and presumably is faster
+    then original implementation */
+ 
+-#if 1
++#ifndef __XTENSA__
+ 
+ extern double __ieee754_remainder(double x, double y);
+ 
+diff --git a/newlib/libm/math/e_remainder.c b/newlib/libm/math/e_remainder.c
+index aca3e6ce0..c5616d3de 100644
+--- a/newlib/libm/math/e_remainder.c
++++ b/newlib/libm/math/e_remainder.c
+@@ -26,7 +26,7 @@
+ 
+ /* __ieee754_remainder is provided by libgcc */
+ 
+-#if 0
++#ifdef __XTENSA__
+ 
+ #ifdef __STDC__
+ static const double zero = 0.0;
+@@ -81,6 +81,6 @@ static double zero = 0.0;
+ 	return x;
+ }
+ 
+-#endif
++#endif /* __XTENSA__ */
+ 
+ #endif /* defined(_DOUBLE_IS_32BITS) */
+diff --git a/newlib/libm/math/ef_fmod.c b/newlib/libm/math/ef_fmod.c
+index e84ddbba4..33cd4851c 100644
+--- a/newlib/libm/math/ef_fmod.c
++++ b/newlib/libm/math/ef_fmod.c
+@@ -18,7 +18,7 @@
+ /* __ieee754_remainderf is provided by libgcc and presumably is faster
+    then original implementation */
+ 
+-#if 0
++#ifndef __XTENSA__
+ 
+ extern float __ieee754_remainderf(float x, float y);
+ 
+diff --git a/newlib/libm/math/ef_remainder.c b/newlib/libm/math/ef_remainder.c
+index 5371009fc..d8249554c 100644
+--- a/newlib/libm/math/ef_remainder.c
++++ b/newlib/libm/math/ef_remainder.c
+@@ -17,7 +17,7 @@
+ 
+ /* __ieee754_remainderf is provided by libgcc */
+ 
+-#if 0
++#ifdef __XTENSA__
+ 
+ #ifdef __STDC__
+ static const float zero = 0.0;
+@@ -71,4 +71,4 @@ static float zero = 0.0;
+ 	return x;
+ }
+ 
+-#endif /* 0 */
++#endif /* __XTENSA__ */
+-- 
+2.11.0 (Apple Git-81)
+

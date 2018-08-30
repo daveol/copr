@@ -1,0 +1,31 @@
+From 19743eac19bc068fcc813823c24b71fad28134bb Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Thu, 26 May 2016 14:02:29 +0800
+Subject: [PATCH 18/22] Don't initialize environ by default
+
+---
+ newlib/libc/stdlib/environ.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/newlib/libc/stdlib/environ.c b/newlib/libc/stdlib/environ.c
+index 8cc239237..abe58fd90 100644
+--- a/newlib/libc/stdlib/environ.c
++++ b/newlib/libc/stdlib/environ.c
+@@ -28,9 +28,13 @@
+  */
+ 
+ /* Provide a definition of `environ' if crt0.o doesn't.  */
+-
++#if 0
+ static char *initial_env[] = { 0 };
+ 
+ /* Posix says `environ' is a pointer to a null terminated list of pointers.
+    Hence `environ' itself is never NULL.  */
+ char **environ = &initial_env[0];
++#else
++/* We will intialize environ in startup code */
++char **environ = 0; 
++#endif
+-- 
+2.11.0 (Apple Git-81)
+

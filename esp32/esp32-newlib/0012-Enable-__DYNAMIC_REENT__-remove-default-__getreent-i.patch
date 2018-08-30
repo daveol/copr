@@ -1,0 +1,48 @@
+From 35d077a9945dbde1a6ac8b8fd898e04b6fb7d316 Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Thu, 12 May 2016 17:48:31 +0800
+Subject: [PATCH 12/22] Enable __DYNAMIC_REENT__, remove default __getreent
+ implementation.
+
+---
+ newlib/libc/reent/getreent.c            | 3 ++-
+ newlib/libc/sys/xtensa/include/config.h | 4 ++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/newlib/libc/reent/getreent.c b/newlib/libc/reent/getreent.c
+index 60ae6fbb7..4cfe20417 100644
+--- a/newlib/libc/reent/getreent.c
++++ b/newlib/libc/reent/getreent.c
+@@ -2,7 +2,7 @@
+ 
+ #include <_ansi.h>
+ #include <reent.h>
+-
++#if 0
+ #ifdef __getreent
+ #undef __getreent
+ #endif
+@@ -12,3 +12,4 @@ _DEFUN_VOID(__getreent)
+ {
+   return _impure_ptr;
+ }
++#endif
+\ No newline at end of file
+diff --git a/newlib/libc/sys/xtensa/include/config.h b/newlib/libc/sys/xtensa/include/config.h
+index 6159c6f5e..a0854dd9b 100644
+--- a/newlib/libc/sys/xtensa/include/config.h
++++ b/newlib/libc/sys/xtensa/include/config.h
+@@ -8,6 +8,10 @@
+  esp8266-specific xtensa stuff
+  *************************************************************************/
+ 
++#ifndef __DYNAMIC_REENT__
++#define __DYNAMIC_REENT__
++#endif
++
+ #ifndef _REENT_SMALL
+ #define _REENT_SMALL
+ #endif
+-- 
+2.11.0 (Apple Git-81)
+

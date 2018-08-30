@@ -1,0 +1,24 @@
+From 4c1ea1767b981c346f47ab7f74050d7011b4384a Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <igrokhotkov@gmail.com>
+Date: Tue, 10 Jan 2017 20:34:54 +0800
+Subject: [PATCH 21/22] stdatomic.h: add stdint.h include
+
+---
+ newlib/libc/include/stdatomic.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/newlib/libc/include/stdatomic.h b/newlib/libc/include/stdatomic.h
+index 09c0cf73e..beba325b1 100644
+--- a/newlib/libc/include/stdatomic.h
++++ b/newlib/libc/include/stdatomic.h
+@@ -32,6 +32,7 @@
+ 
+ #include <sys/cdefs.h>
+ #include <sys/_types.h>
++#include <stdint.h>
+ 
+ #if __has_extension(c_atomic) || __has_extension(cxx_atomic)
+ #define	__CLANG_ATOMICS
+-- 
+2.11.0 (Apple Git-81)
+

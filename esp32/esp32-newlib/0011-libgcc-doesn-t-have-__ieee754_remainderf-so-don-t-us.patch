@@ -1,0 +1,26 @@
+From 872cdd3603d21a8ecdff2ae499c3670c96c2c309 Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Thu, 12 May 2016 17:47:55 +0800
+Subject: [PATCH 11/22] libgcc doesn't have __ieee754_remainderf, so don't use
+ it
+
+---
+ newlib/libm/math/ef_fmod.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/newlib/libm/math/ef_fmod.c b/newlib/libm/math/ef_fmod.c
+index 1454086cc..e84ddbba4 100644
+--- a/newlib/libm/math/ef_fmod.c
++++ b/newlib/libm/math/ef_fmod.c
+@@ -18,7 +18,7 @@
+ /* __ieee754_remainderf is provided by libgcc and presumably is faster
+    then original implementation */
+ 
+-#if 1
++#if 0
+ 
+ extern float __ieee754_remainderf(float x, float y);
+ 
+-- 
+2.11.0 (Apple Git-81)
+

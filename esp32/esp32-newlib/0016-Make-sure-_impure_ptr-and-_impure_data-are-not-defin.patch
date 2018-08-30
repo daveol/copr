@@ -1,0 +1,79 @@
+From 380184b806b2468ddc451ef41734cfef7b501ab7 Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Tue, 24 May 2016 20:20:27 +0800
+Subject: [PATCH 16/22] Make sure _impure_ptr and _impure_data are not defined
+ when __DYNAMIC_REENT__ is used
+
+---
+ newlib/libc/include/sys/reent.h  | 5 ++++-
+ newlib/libc/machine/spu/impure.c | 4 +++-
+ newlib/libc/reent/impure.c       | 6 +++++-
+ newlib/libc/reent/reent.c        | 2 +-
+ 4 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/newlib/libc/include/sys/reent.h b/newlib/libc/include/sys/reent.h
+index ce5b3eda7..bb52ae65f 100644
+--- a/newlib/libc/include/sys/reent.h
++++ b/newlib/libc/include/sys/reent.h
+@@ -759,8 +759,11 @@ struct _reent
+ #define __ATTRIBUTE_IMPURE_PTR__
+ #endif
+ 
++#if !defined(__DYNAMIC_REENT__) || defined(__SINGLE_THREAD__)
+ extern struct _reent *_impure_ptr __ATTRIBUTE_IMPURE_PTR__;
+-extern struct _reent *_CONST _global_impure_ptr __ATTRIBUTE_IMPURE_PTR__;
++#endif
++
++extern struct _reent *_global_impure_ptr __ATTRIBUTE_IMPURE_PTR__;
+ 
+ void _reclaim_reent _PARAMS ((struct _reent *));
+ 
+diff --git a/newlib/libc/machine/spu/impure.c b/newlib/libc/machine/spu/impure.c
+index 5fbe0e5f5..3a9f6fb7e 100644
+--- a/newlib/libc/machine/spu/impure.c
++++ b/newlib/libc/machine/spu/impure.c
+@@ -9,6 +9,8 @@
+ #define __ATTRIBUTE_IMPURE_DATA__
+ #endif
+ 
++#ifndef __DYNAMIC_REENT__
+ struct _reent __ATTRIBUTE_IMPURE_DATA__ _impure_data = _REENT_INIT(_impure_data);
+ struct _reent *__ATTRIBUTE_IMPURE_PTR__ _impure_ptr = &_impure_data;
+-struct _reent *_CONST __ATTRIBUTE_IMPURE_PTR__ _global_impure_ptr = &_impure_data;
++#endif
++struct _reent *_CONST __ATTRIBUTE_IMPURE_PTR__ _global_impure_ptr = NULL;
+diff --git a/newlib/libc/reent/impure.c b/newlib/libc/reent/impure.c
+index f5918c88f..f393f7a58 100644
+--- a/newlib/libc/reent/impure.c
++++ b/newlib/libc/reent/impure.c
+@@ -20,9 +20,13 @@ extern const struct __sFILE_fake __sf_fake_stdout _ATTRIBUTE ((weak));
+ extern const struct __sFILE_fake __sf_fake_stderr _ATTRIBUTE ((weak));
+ #endif
+ 
++#if !defined(__DYNAMIC_REENT__) || defined(__SINGLE_THREAD__)
+ static struct _reent __ATTRIBUTE_IMPURE_DATA__ impure_data = _REENT_INIT (impure_data);
++#endif
+ #ifdef __CYGWIN__
+ extern struct _reent reent_data __attribute__ ((alias("impure_data")));
+ #endif
++#if !defined(__DYNAMIC_REENT__) || defined(__SINGLE_THREAD__)
+ struct _reent *__ATTRIBUTE_IMPURE_PTR__ _impure_ptr = &impure_data;
+-struct _reent *_CONST __ATTRIBUTE_IMPURE_PTR__ _global_impure_ptr = &impure_data;
++#endif
++struct _reent * __ATTRIBUTE_IMPURE_PTR__ _global_impure_ptr = NULL;
+diff --git a/newlib/libc/reent/reent.c b/newlib/libc/reent/reent.c
+index b6c2abf02..c6103c59b 100644
+--- a/newlib/libc/reent/reent.c
++++ b/newlib/libc/reent/reent.c
+@@ -45,7 +45,7 @@ void
+ _DEFUN (_reclaim_reent, (ptr),
+      struct _reent *ptr)
+ {
+-  if (ptr != _impure_ptr)
++  if (ptr != _REENT)
+     {
+       /* used by mprec routines. */
+ #ifdef _REENT_SMALL
+-- 
+2.11.0 (Apple Git-81)
+

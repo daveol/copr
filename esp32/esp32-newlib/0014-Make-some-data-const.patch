@@ -1,0 +1,219 @@
+From b7922f1e7539d3759420e32809493a3051b6a364 Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Tue, 24 May 2016 20:08:15 +0800
+Subject: [PATCH 14/22] Make some data const
+
+---
+ newlib/libc/ctype/ctype_.c     |  2 +-
+ newlib/libc/include/ctype.h    |  2 +-
+ newlib/libc/locale/lctype.c    |  2 +-
+ newlib/libc/locale/lmonetary.c |  4 ++--
+ newlib/libc/locale/lnumeric.c  |  2 +-
+ newlib/libc/locale/locale.c    | 14 ++++++++------
+ newlib/libc/search/extern.h    |  2 +-
+ newlib/libc/search/hash_func.c |  2 +-
+ newlib/libc/stdlib/getopt.c    |  4 ++--
+ newlib/libc/stdlib/local.h     |  4 ++--
+ newlib/libc/stdlib/mbtowc_r.c  |  2 +-
+ newlib/libc/stdlib/wctomb_r.c  |  2 +-
+ 12 files changed, 22 insertions(+), 20 deletions(-)
+
+diff --git a/newlib/libc/ctype/ctype_.c b/newlib/libc/ctype/ctype_.c
+index 164a8eed7..319b0e220 100644
+--- a/newlib/libc/ctype/ctype_.c
++++ b/newlib/libc/ctype/ctype_.c
+@@ -153,7 +153,7 @@ char *__ctype_ptr = (char *) _ctype_ + 1;
+ #ifndef _MB_CAPABLE
+ _CONST
+ #endif
+-char *__ctype_ptr__ = (char *) _ctype_;
++char * _CONST __ctype_ptr__ = (char *) _ctype_;
+ 
+ #endif
+ 
+diff --git a/newlib/libc/include/ctype.h b/newlib/libc/include/ctype.h
+index 56ad5abb6..1eb3f787f 100644
+--- a/newlib/libc/include/ctype.h
++++ b/newlib/libc/include/ctype.h
+@@ -42,7 +42,7 @@ int _EXFUN(toascii, (int __c));
+ #ifndef _MB_CAPABLE
+ _CONST
+ #endif
+-extern	__IMPORT char	*__ctype_ptr__;
++extern	__IMPORT char	* _CONST __ctype_ptr__;
+ 
+ #ifndef __cplusplus
+ /* These macros are intentionally written in a manner that will trigger
+diff --git a/newlib/libc/locale/lctype.c b/newlib/libc/locale/lctype.c
+index 28575dd08..4e39bd6b1 100644
+--- a/newlib/libc/locale/lctype.c
++++ b/newlib/libc/locale/lctype.c
+@@ -29,7 +29,7 @@
+ 
+ #define LCCTYPE_SIZE (sizeof(struct lc_ctype_T) / sizeof(char *))
+ 
+-static char	numone[] = { '\1', '\0'};
++static _CONST char	numone[] = { '\1', '\0'};
+ 
+ static const struct lc_ctype_T _C_ctype_locale = {
+ 	"ASCII",			/* codeset */
+diff --git a/newlib/libc/locale/lmonetary.c b/newlib/libc/locale/lmonetary.c
+index 80c2d0442..04ea2d40c 100644
+--- a/newlib/libc/locale/lmonetary.c
++++ b/newlib/libc/locale/lmonetary.c
+@@ -36,8 +36,8 @@ extern const char * __fix_locale_grouping_str(const char *);
+ 
+ #define LCMONETARY_SIZE (sizeof(struct lc_monetary_T) / sizeof(char *))
+ 
+-static char	empty[] = "";
+-static char	numempty[] = { CHAR_MAX, '\0'};
++static _CONST char	empty[] = "";
++static _CONST char	numempty[] = { CHAR_MAX, '\0'};
+ #ifdef __HAVE_LOCALE_INFO_EXTENDED__
+ static wchar_t	wempty[] = L"";
+ #endif
+diff --git a/newlib/libc/locale/lnumeric.c b/newlib/libc/locale/lnumeric.c
+index ae2447066..64b9645be 100644
+--- a/newlib/libc/locale/lnumeric.c
++++ b/newlib/libc/locale/lnumeric.c
+@@ -33,7 +33,7 @@ extern const char *__fix_locale_grouping_str(const char *);
+ 
+ #define LCNUMERIC_SIZE (sizeof(struct lc_numeric_T) / sizeof(char *))
+ 
+-static char	numempty[] = { CHAR_MAX, '\0' };
++static _CONST char	numempty[] = { CHAR_MAX, '\0' };
+ 
+ static const struct lc_numeric_T _C_numeric_locale = {
+ 	".",     			/* decimal_point */
+diff --git a/newlib/libc/locale/locale.c b/newlib/libc/locale/locale.c
+index 8e2b121bc..4f645d072 100644
+--- a/newlib/libc/locale/locale.c
++++ b/newlib/libc/locale/locale.c
+@@ -191,14 +191,16 @@ No supporting OS subroutines are required.
+ #ifdef __CYGWIN__ /* Cygwin starts with LC_CTYPE set to "C.UTF-8". */
+ int __EXPORT __mb_cur_max = 6;
+ #else
+-int __EXPORT __mb_cur_max = 1;
++_CONST int __EXPORT __mb_cur_max = 1;
+ #endif
+ 
++#ifdef __HAVE_LOCALE_INFO__
+ int __nlocale_changed = 0;
+ int __mlocale_changed = 0;
+ char *_PathLocale = NULL;
++#endif
+ 
+-static
++static _CONST
+ struct lconv lconv = 
+ {
+   ".", "", "", "", "", "", "", "", "", "",
+@@ -265,12 +267,12 @@ static const char *__get_locale_env(struct _reent *, int);
+ #endif /* _MB_CAPABLE */
+ 
+ #ifdef __CYGWIN__
+-static char lc_ctype_charset[ENCODING_LEN + 1] = "UTF-8";
++static const char lc_ctype_charset[ENCODING_LEN + 1] = "UTF-8";
+ #else
+-static char lc_ctype_charset[ENCODING_LEN + 1] = "ASCII";
++static const char lc_ctype_charset[ENCODING_LEN + 1] = "ASCII";
+ #endif
+-static char lc_message_charset[ENCODING_LEN + 1] = "ASCII";
+-static int lc_ctype_cjk_lang = 0;
++static const char lc_message_charset[ENCODING_LEN + 1] = "ASCII";
++static const int lc_ctype_cjk_lang = 0;
+ 
+ char *
+ _DEFUN(_setlocale_r, (p, category, locale),
+diff --git a/newlib/libc/search/extern.h b/newlib/libc/search/extern.h
+index 666a6e5bf..a528dded6 100644
+--- a/newlib/libc/search/extern.h
++++ b/newlib/libc/search/extern.h
+@@ -59,7 +59,7 @@ void	 __reclaim_buf(HTAB *, BUFHEAD *);
+ int	 __split_page(HTAB *, __uint32_t, __uint32_t);
+ 
+ /* Default hash routine. */
+-extern __uint32_t (*__default_hash)(const void *, size_t);
++extern __uint32_t (* _CONST __default_hash)(const void *, size_t);
+ 
+ #ifdef HASH_STATISTICS
+ extern int hash_accesses, hash_collisions, hash_expansions, hash_overflows;
+diff --git a/newlib/libc/search/hash_func.c b/newlib/libc/search/hash_func.c
+index 355f0b592..d584cf55d 100644
+--- a/newlib/libc/search/hash_func.c
++++ b/newlib/libc/search/hash_func.c
+@@ -53,7 +53,7 @@ static __uint32_t hash3(const void *, size_t);
+ static __uint32_t hash4(const void *, size_t);
+ 
+ /* Global default hash function */
+-__uint32_t (*__default_hash)(const void *, size_t) = hash4;
++__uint32_t (* _CONST __default_hash)(const void *, size_t) = hash4;
+ 
+ /*
+  * HASH FUNCTIONS
+diff --git a/newlib/libc/stdlib/getopt.c b/newlib/libc/stdlib/getopt.c
+index 109474764..c6934b280 100644
+--- a/newlib/libc/stdlib/getopt.c
++++ b/newlib/libc/stdlib/getopt.c
+@@ -113,8 +113,8 @@ typedef enum GETOPT_ORDERING_T
+ /* globally-defined variables */
+ char *optarg = 0;
+ int optind = 0;
+-int opterr = 1;
+-int optopt = '?';
++int opterr = 0;
++int optopt = 0;
+ 
+ /* static variables */
+ static int optwhere = 0;
+diff --git a/newlib/libc/stdlib/local.h b/newlib/libc/stdlib/local.h
+index 12e6998c1..117021eb7 100644
+--- a/newlib/libc/stdlib/local.h
++++ b/newlib/libc/stdlib/local.h
+@@ -11,7 +11,7 @@ char *__locale_charset(_NOARGS);
+ #include <wchar.h>
+ #endif
+ 
+-extern int (*__wctomb) (struct _reent *, char *, wchar_t, const char *,
++extern int (* _CONST __wctomb) (struct _reent *, char *, wchar_t, const char *,
+ 			mbstate_t *);
+ int __ascii_wctomb (struct _reent *, char *, wchar_t, const char *,
+ 		    mbstate_t *);
+@@ -30,7 +30,7 @@ int __big5_wctomb (struct _reent *, char *, wchar_t, const char *, mbstate_t *);
+ #endif
+ #endif
+ 
+-extern int (*__mbtowc) (struct _reent *, wchar_t *, const char *, size_t,
++extern int (* _CONST __mbtowc) (struct _reent *, wchar_t *, const char *, size_t,
+ 			const char *, mbstate_t *);
+ int __ascii_mbtowc (struct _reent *, wchar_t *, const char *, size_t,
+ 		    const char *, mbstate_t *);
+diff --git a/newlib/libc/stdlib/mbtowc_r.c b/newlib/libc/stdlib/mbtowc_r.c
+index 986595cfd..08ea28ed2 100644
+--- a/newlib/libc/stdlib/mbtowc_r.c
++++ b/newlib/libc/stdlib/mbtowc_r.c
+@@ -7,7 +7,7 @@
+ #include <errno.h>
+ #include "local.h"
+ 
+-int (*__mbtowc) (struct _reent *, wchar_t *, const char *, size_t,
++int (* _CONST __mbtowc) (struct _reent *, wchar_t *, const char *, size_t,
+ 		 const char *, mbstate_t *)
+ #ifdef __CYGWIN__
+    /* Cygwin starts up in UTF-8 mode. */
+diff --git a/newlib/libc/stdlib/wctomb_r.c b/newlib/libc/stdlib/wctomb_r.c
+index 13e1e4c36..bea731979 100644
+--- a/newlib/libc/stdlib/wctomb_r.c
++++ b/newlib/libc/stdlib/wctomb_r.c
+@@ -6,7 +6,7 @@
+ #include "mbctype.h"
+ #include "local.h"
+ 
+-int (*__wctomb) (struct _reent *, char *, wchar_t, const char *charset,
++int (* _CONST __wctomb) (struct _reent *, char *, wchar_t, const char *charset,
+ 		 mbstate_t *)
+ #ifdef __CYGWIN__
+    /* Cygwin starts up in UTF-8 mode. */
+-- 
+2.11.0 (Apple Git-81)
+

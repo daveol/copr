@@ -1,0 +1,43 @@
+From a5de62471d178feb1cd9325116171825a53d2424 Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Tue, 22 Aug 2017 18:51:58 +0800
+Subject: [PATCH 22/22] xtensa: enable pthreads support
+
+---
+ newlib/libc/include/sys/features.h | 6 ++++++
+ newlib/libc/include/sys/sched.h    | 2 ++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/newlib/libc/include/sys/features.h b/newlib/libc/include/sys/features.h
+index 1d90921af..87f3314fd 100644
+--- a/newlib/libc/include/sys/features.h
++++ b/newlib/libc/include/sys/features.h
+@@ -210,6 +210,12 @@ extern "C" {
+ 
+ #endif /* __CYGWIN__ */
+ 
++/* ESP-IDF-specific: enable pthreads support */
++#ifdef __XTENSA__
++#define _POSIX_THREADS                          1
++#define _UNIX98_THREAD_MUTEX_ATTRIBUTES         1
++#endif
++
+ /* Per the permission given in POSIX.1-2008 section 2.2.1, define
+  * _POSIX_C_SOURCE if _XOPEN_SOURCE is defined and _POSIX_C_SOURCE is not.
+  * (_XOPEN_SOURCE indicates that XSI extensions are desired by an application.)
+diff --git a/newlib/libc/include/sys/sched.h b/newlib/libc/include/sys/sched.h
+index 58f99d682..2cc0d39d3 100644
+--- a/newlib/libc/include/sys/sched.h
++++ b/newlib/libc/include/sys/sched.h
+@@ -62,6 +62,8 @@ struct sched_param {
+ }
+ #endif
+ 
++int sched_yield( void );
++
+ #endif
+ /* end of include file */
+ 
+-- 
+2.11.0 (Apple Git-81)
+

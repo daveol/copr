@@ -1,0 +1,34 @@
+From c20b68476e590e7460b1a5f6cebe95e39fc22bae Mon Sep 17 00:00:00 2001
+From: Ivan Grokhotkov <ivan@espressif.com>
+Date: Thu, 26 May 2016 14:01:56 +0800
+Subject: [PATCH 17/22] Prevent locale loading code from being pulled in
+
+---
+ newlib/libc/locale/timelocal.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/newlib/libc/locale/timelocal.c b/newlib/libc/locale/timelocal.c
+index ca2f79b50..76c7c2a84 100644
+--- a/newlib/libc/locale/timelocal.c
++++ b/newlib/libc/locale/timelocal.c
+@@ -159,8 +159,8 @@ __get_current_time_locale(void) {
+ int
+ __time_load_locale(const char *name, void *f_wctomb, const char *charset) {
+ 
+-	int	ret;
+-
++	int	ret = 0;
++#ifdef __HAVE_LOCALE_INFO__
+ #ifdef __CYGWIN__
+ 	extern int __set_lc_time_from_win (const char *,
+ 					   const struct lc_time_T *,
+@@ -184,5 +184,6 @@ __time_load_locale(const char *name, void *f_wctomb, const char *charset) {
+ 			LCTIME_SIZE, LCTIME_SIZE,
+ 			(const char **)&_time_locale);
+ #endif
++#endif /*__HAVE_LOCALE_INFO__*/
+ 	return (ret);
+ }
+-- 
+2.11.0 (Apple Git-81)
+
