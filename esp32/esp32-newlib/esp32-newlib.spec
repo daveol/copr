@@ -7,7 +7,7 @@
 
 Name:           esp32-newlib
 Version:        2.2.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Epoch:          0
 Summary:        C library intended for use on %{esp_target} embedded systems
 
@@ -75,7 +75,7 @@ tar --strip-components=1 -xv -f %{SOURCE1} newlib
 %if 0%{bootstrap}
 mkdir -p "%{buildroot}%{esp32_includedir}"
 cp -a newlib/libc/include/. %{buildroot}%{esp32_includedir}
-cp -r newlib/libc/sys/xtensa/include/. %{buildroot}%{esp32__includedir}
+cp -r newlib/libc/sys/xtensa/include/. %{buildroot}%{esp32_includedir}
 
 %else
 %make_install
@@ -90,6 +90,9 @@ cp -r newlib/libc/sys/xtensa/include/. %{buildroot}%{esp32__includedir}
 
 
 %changelog
+* Fri Aug 31 2018 Dave Olsthoorn <dave@bewaar.me> - 0:2.2.0-2
+- fix typo
+
 * Thu Aug 30 2018 Dave Olsthoorn <dave@bewaar.me> - 2.2.0-1
 - Initial specfile
 
