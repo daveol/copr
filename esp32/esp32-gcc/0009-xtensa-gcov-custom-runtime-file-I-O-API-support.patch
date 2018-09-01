@@ -1,0 +1,440 @@
+From 0d4eff0aeb61d657bdcbb4c6717b79ad23799f77 Mon Sep 17 00:00:00 2001
+From: Alexey Gerenkov <alexey@espressif.com>
+Date: Mon, 18 Sep 2017 10:10:19 +0800
+Subject: [PATCH 09/11] xtensa: gcov custom runtime file I/O API support
+
+---
+ gcc/gcov-io.c                  | 46 ++++++++++++++++++----
+ libgcc/Makefile.in             |  2 +-
+ libgcc/configure               | 12 ++++++
+ libgcc/configure.ac            |  6 +++
+ libgcc/libgcov-driver-system.c |  6 +++
+ libgcc/libgcov-driver.c        | 87 ++++++++++++++++++++++++++++++++----------
+ 6 files changed, 130 insertions(+), 29 deletions(-)
+
+diff --git a/gcc/gcov-io.c b/gcc/gcov-io.c
+index cbd0a9f1471..48cd74d709c 100644
+--- a/gcc/gcov-io.c
++++ b/gcc/gcov-io.c
+@@ -28,8 +28,34 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+    another source file, after having #included gcov-io.h.  */
+ 
+ #if !IN_GCOV
++
++#if GCOV_CUSTOM_RTIO
++extern void * gcov_rtio_fopen(const char *path, const char *mode);
++extern int    gcov_rtio_fclose(void *stream);
++extern size_t gcov_rtio_fwrite(const void *ptr, size_t size, size_t nmemb, void *stream);
++extern int    gcov_rtio_fseek(void *stream, long offset, int whence);
++extern long   gcov_rtio_ftell(void *stream);
++#define GCOV_FOPEN(_p_, _m_)             gcov_rtio_fopen(_p_, _m_)
++#define GCOV_FCLOSE(_f_)                 gcov_rtio_fclose(_f_)
++#define GCOV_FWRITE(_b_, _s_, _c_, _f_)  gcov_rtio_fwrite(_b_, _s_, _c_, _f_)
++#define GCOV_FREAD(_b_, _s_, _c_, _f_)   (0)
++#define GCOV_FSEEK(_f_, _p_, _w_)        gcov_rtio_fseek(_f_, _p_, _w_)
++#define GCOV_FTELL(_f_)                  gcov_rtio_ftell(_f_)
++#else
++#define GCOV_FOPEN(_p_, _m_)             fopen(_p_, _m_)
++#define GCOV_FCLOSE(_f_)                 fclose(_f_)
++#define GCOV_FWRITE(_b_, _s_, _c_, _f_)  fwrite(_b_, _s_, _c_, _f_)
++#define GCOV_FREAD(_b_, _s_, _c_, _f_)   fread(_b_, _s_, _c_, _f_)
++#define GCOV_FSEEK(_f_, _o_, _w_)        fseek(_f_, _o_, _w_)
++#define GCOV_FTELL(_f_)                  ftell(_f_)
++#endif
++
+ static void gcov_write_block (unsigned);
+ static gcov_unsigned_t *gcov_write_words (unsigned);
++#else
++#define GCOV_FOPEN(_p_, _m_)             fopen(_p_, _m_)
++#define GCOV_FCLOSE(_f_)                 fclose(_f_)
++#define GCOV_FREAD(_b_, _s_, _c_, _f_)   fread(_b_, _s_, _c_, _f_)
+ #endif
+ static const gcov_unsigned_t *gcov_read_words (unsigned);
+ #if !IN_LIBGCOV
+@@ -94,7 +120,7 @@ gcov_rewrite (void)
+   gcov_var.mode = -1; 
+   gcov_var.start = 0;
+   gcov_var.offset = 0;
+-  fseek (gcov_var.file, 0L, SEEK_SET);
++  GCOV_FSEEK (gcov_var.file, 0L, SEEK_SET);
+ }
+ #endif
+ 
+@@ -140,7 +166,9 @@ gcov_open (const char *name, int mode)
+   s_flock.l_pid = getpid ();
+ #endif
+ 
++#if GCOV_CUSTOM_RTIO == 0
+   gcov_nonruntime_assert (!gcov_var.file);
++#endif
+   gcov_var.start = 0;
+   gcov_var.offset = gcov_var.length = 0;
+   gcov_var.overread = -1u;
+@@ -203,13 +231,13 @@ gcov_open (const char *name, int mode)
+     gcov_var.mode = mode * 2 + 1;
+ #else
+   if (mode >= 0)
+-    gcov_var.file = fopen (name, (mode > 0) ? "rb" : "r+b");
++    gcov_var.file = GCOV_FOPEN (name, (mode > 0) ? "rb" : "r+b");
+ 
+   if (gcov_var.file)
+     gcov_var.mode = 1;
+   else if (mode <= 0)
+     {
+-      gcov_var.file = fopen (name, "w+b");
++      gcov_var.file = GCOV_FOPEN (name, "w+b");
+       if (gcov_var.file)
+ 	gcov_var.mode = mode * 2 + 1;
+     }
+@@ -217,7 +245,9 @@ gcov_open (const char *name, int mode)
+     return 0;
+ #endif
+ 
++#if GCOV_CUSTOM_RTIO == 0
+   setbuf (gcov_var.file, (char *)0);
++#endif
+ 
+   return 1;
+ }
+@@ -234,7 +264,7 @@ gcov_close (void)
+       if (gcov_var.offset && gcov_var.mode < 0)
+ 	gcov_write_block (gcov_var.offset);
+ #endif
+-      fclose (gcov_var.file);
++      GCOV_FCLOSE (gcov_var.file);
+       gcov_var.file = 0;
+       gcov_var.length = 0;
+     }
+@@ -290,7 +320,7 @@ gcov_allocate (unsigned length)
+ static void
+ gcov_write_block (unsigned size)
+ {
+-  if (fwrite (gcov_var.buffer, size << 2, 1, gcov_var.file) != 1)
++  if (GCOV_FWRITE (gcov_var.buffer, size << 2, 1, gcov_var.file) != 1)
+     gcov_var.error = 1;
+   gcov_var.start += size;
+   gcov_var.offset -= size;
+@@ -515,7 +545,7 @@ gcov_read_words (unsigned words)
+ 	gcov_allocate (gcov_var.length + words);
+       excess = gcov_var.alloc - gcov_var.length;
+ #endif
+-      excess = fread (gcov_var.buffer + gcov_var.length,
++      excess = GCOV_FREAD (gcov_var.buffer + gcov_var.length,
+ 		      1, excess << 2, gcov_var.file) >> 2;
+       gcov_var.length += excess;
+       if (gcov_var.length < words)
+@@ -682,8 +712,8 @@ gcov_seek (gcov_position_t base)
+ {
+   if (gcov_var.offset)
+     gcov_write_block (gcov_var.offset);
+-  fseek (gcov_var.file, base << 2, SEEK_SET);
+-  gcov_var.start = ftell (gcov_var.file) >> 2;
++  GCOV_FSEEK (gcov_var.file, base << 2, SEEK_SET);
++  gcov_var.start = GCOV_FTELL (gcov_var.file) >> 2;
+ }
+ #endif
+ 
+diff --git a/libgcc/Makefile.in b/libgcc/Makefile.in
+index 88ddfea18eb..9810fc8f149 100644
+--- a/libgcc/Makefile.in
++++ b/libgcc/Makefile.in
+@@ -280,7 +280,7 @@ override CFLAGS := $(filter-out -fprofile-generate -fprofile-use,$(CFLAGS))
+ # will usually contain -g, so for the moment CFLAGS goes first.  We must
+ # include CFLAGS - that's where multilib options live.
+ INTERNAL_CFLAGS = $(CFLAGS) $(LIBGCC2_CFLAGS) $(HOST_LIBGCC2_CFLAGS) \
+-		  $(INCLUDES) @set_have_cc_tls@ @set_use_emutls@
++		  $(INCLUDES) @set_have_cc_tls@ @set_use_emutls@ @gcov_custom_rtio_flags@
+ 
+ # Options to use when compiling crtbegin/end.
+ CRTSTUFF_CFLAGS = -O2 $(GCC_CFLAGS) $(INCLUDES) $(MULTILIB_CFLAGS) -g0 \
+diff --git a/libgcc/configure b/libgcc/configure
+index 08c931929c7..797c15340a0 100644
+--- a/libgcc/configure
++++ b/libgcc/configure
+@@ -567,6 +567,7 @@ set_use_emutls
+ set_have_cc_tls
+ vis_hide
+ accel_dir_suffix
++gcov_custom_rtio_flags
+ force_explicit_eh_registry
+ fixed_point
+ enable_decimal_float
+@@ -671,6 +672,7 @@ enable_decimal_float
+ with_system_libunwind
+ enable_sjlj_exceptions
+ enable_explicit_exception_frame_registration
++enable_gcov_custom_rtio
+ with_glibc_version
+ enable_tls
+ '
+@@ -1313,6 +1315,9 @@ Optional Features:
+                           register exception tables explicitly at module
+                           start, for use e.g. for compatibility with
+                           installations without PT_GNU_EH_FRAME support
++  --enable-gcov-custom-rtio
++                          Enable custom file I/O API for gcov at runtime
++                          (default is no)
+   --enable-tls            Use thread-local storage [default=yes]
+ 
+ Optional Packages:
+@@ -4620,6 +4625,13 @@ fi
+ 
+ 
+ 
++# Check whether --enable-gcov-custom-rtio was given.
++if test "${enable_gcov_custom_rtio+set}" = set; then :
++  enableval=$enable_gcov_custom_rtio; gcov_custom_rtio_flags=-DGCOV_CUSTOM_RTIO=1
++fi
++
++
++
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking if the linker ($LD) is GNU ld" >&5
+ $as_echo_n "checking if the linker ($LD) is GNU ld... " >&6; }
+ if test "${acl_cv_prog_gnu_ld+set}" = set; then :
+diff --git a/libgcc/configure.ac b/libgcc/configure.ac
+index 1c405e8dfe5..5d89f5fcad8 100644
+--- a/libgcc/configure.ac
++++ b/libgcc/configure.ac
+@@ -300,6 +300,12 @@ fi
+ ])
+ AC_SUBST([force_explicit_eh_registry])
+ 
++AC_ARG_ENABLE(gcov-custom-rtio,
++[AS_HELP_STRING([--enable-gcov-custom-rtio],
++  [Enable custom file I/O API for gcov at runtime (default is no)])],
++gcov_custom_rtio_flags=-DGCOV_CUSTOM_RTIO=1, )
++AC_SUBST(gcov_custom_rtio_flags)
++
+ AC_LIB_PROG_LD_GNU
+ 
+ AC_MSG_CHECKING([for thread model used by GCC])
+diff --git a/libgcc/libgcov-driver-system.c b/libgcc/libgcov-driver-system.c
+index 94f198dcefb..4b7ef050bde 100644
+--- a/libgcc/libgcov-driver-system.c
++++ b/libgcc/libgcov-driver-system.c
+@@ -93,6 +93,7 @@ allocate_filename_struct (struct gcov_filename *gf)
+   int strip = 0;
+ 
+   {
++#if GCOV_CUSTOM_RTIO == 0
+     /* Check if the level of dirs to strip off specified. */
+     char *tmp = getenv("GCOV_PREFIX_STRIP");
+     if (tmp)
+@@ -102,11 +103,16 @@ allocate_filename_struct (struct gcov_filename *gf)
+         if (strip < 0)
+           strip = 0;
+       }
++#endif
+   }
+   gf->strip = strip;
+ 
++#if GCOV_CUSTOM_RTIO == 0
+   /* Get file name relocation prefix.  Non-absolute values are ignored. */
+   gcov_prefix = getenv("GCOV_PREFIX");
++#else
++  gcov_prefix = NULL;
++#endif
+   prefix_length = gcov_prefix ? strlen (gcov_prefix) : 0;
+   
+   /* Remove an unnecessary trailing '/' */
+diff --git a/libgcc/libgcov-driver.c b/libgcc/libgcov-driver.c
+index 221ac0c00d0..6dfce51e276 100644
+--- a/libgcc/libgcov-driver.c
++++ b/libgcc/libgcov-driver.c
+@@ -43,6 +43,22 @@ void __gcov_init (struct gcov_info *p __attribute__ ((unused))) {}
+ 
+ #ifdef L_gcov
+ 
++#if GCOV_CUSTOM_RTIO
++extern int gcov_rtio_atexit(void (*function)(void));
++#endif
++
++#if IN_GCOV_TOOL
++#define GCOV_SUMMARY_ALLOC(_nm_) \
++  struct gcov_summary _nm_ ## _tmp; \
++  struct gcov_summary * _nm_ = &(_nm_ ## _tmp);
++#define GCOV_SUMMARY_FREE(_nm_)
++#else
++#define GCOV_SUMMARY_ALLOC(_nm_) \
++  struct gcov_summary * _nm_ = xmalloc(sizeof(struct gcov_summary));
++#define GCOV_SUMMARY_FREE(_nm_) \
++  free(_nm_);
++#endif
++
+ /* A utility function for outputing errors.  */
+ static int gcov_error (const char *, ...);
+ 
+@@ -371,11 +387,14 @@ merge_one_data (const char *filename,
+     /* Read from a different compilation. Overwrite the file.  */
+     return 0;
+ 
++  GCOV_SUMMARY_ALLOC(ptmp);
++  if (!ptmp) {
++    fprintf (stderr, "failed to alloc mem for summary!\n");
++    return -1;
++  }
+   /* Look for program summary.  */
+   for (f_ix = 0;;)
+     {
+-      struct gcov_summary tmp;
+-
+       *eof_pos_p = gcov_position ();
+       tag = gcov_read_unsigned ();
+       if (tag != GCOV_TAG_PROGRAM_SUMMARY)
+@@ -383,9 +402,11 @@ merge_one_data (const char *filename,
+ 
+       f_ix--;
+       length = gcov_read_unsigned ();
+-      gcov_read_summary (&tmp);
+-      if ((error = gcov_is_error ()))
++      gcov_read_summary (ptmp);
++      if ((error = gcov_is_error ())) {
++        GCOV_SUMMARY_FREE(ptmp);
+         goto read_error;
++      }
+       if (*summary_pos_p)
+         {
+           /* Save all summaries after the one that will be
+@@ -395,22 +416,23 @@ merge_one_data (const char *filename,
+              size of the merged summary.  */
+           (*sum_tail) = (struct gcov_summary_buffer *)
+               xmalloc (sizeof(struct gcov_summary_buffer));
+-          (*sum_tail)->summary = tmp;
++          (*sum_tail)->summary = *ptmp;
+           (*sum_tail)->next = 0;
+           sum_tail = &((*sum_tail)->next);
+           goto next_summary;
+         }
+-      if (tmp.checksum != crc32)
++      if (ptmp->checksum != crc32)
+         goto next_summary;
+ 
+       for (t_ix = 0; t_ix != GCOV_COUNTERS_SUMMABLE; t_ix++)
+-        if (tmp.ctrs[t_ix].num != this_prg->ctrs[t_ix].num)
++        if (ptmp->ctrs[t_ix].num != this_prg->ctrs[t_ix].num)
+           goto next_summary;
+-      *prg_p = tmp;
++      *prg_p = *ptmp;
+       *summary_pos_p = *eof_pos_p;
+ 
+     next_summary:;
+     }
++    GCOV_SUMMARY_FREE(ptmp);
+ 
+   /* Merge execution counts for each function.  */
+   for (f_ix = 0; (unsigned)f_ix != gi_ptr->n_functions;
+@@ -760,7 +782,6 @@ dump_one_gcov (struct gcov_info *gi_ptr, struct gcov_filename *gf,
+ 	       gcov_unsigned_t crc32, struct gcov_summary *all_prg,
+ 	       struct gcov_summary *this_prg)
+ {
+-  struct gcov_summary prg; /* summary for this object over all program.  */
+   int error;
+   gcov_unsigned_t tag;
+   gcov_position_t summary_pos = 0;
+@@ -771,9 +792,18 @@ dump_one_gcov (struct gcov_info *gi_ptr, struct gcov_filename *gf,
+ 
+   gcov_sort_topn_counter_arrays (gi_ptr);
+ 
++  /* summary for this object over all program.  */
++  GCOV_SUMMARY_ALLOC(pprg);
++  if (!pprg) {
++    fprintf (stderr, "failed to alloc mem for summary:%s:Skip\n", gf->filename);
++    return;
++  }
++
+   error = gcov_exit_open_gcda_file (gi_ptr, gf);
+-  if (error == -1)
++  if (error == -1) {
++    GCOV_SUMMARY_FREE(pprg);
+     return;
++  }
+ 
+   tag = gcov_read_unsigned ();
+   if (tag)
+@@ -784,7 +814,7 @@ dump_one_gcov (struct gcov_info *gi_ptr, struct gcov_filename *gf,
+           gcov_error ("profiling:%s:Not a gcov data file\n", gf->filename);
+           goto read_fatal;
+         }
+-      error = merge_one_data (gf->filename, gi_ptr, &prg, this_prg,
++      error = merge_one_data (gf->filename, gi_ptr, pprg, this_prg,
+ 			      &summary_pos, &eof_pos, crc32);
+       if (error == -1)
+         goto read_fatal;
+@@ -794,19 +824,20 @@ dump_one_gcov (struct gcov_info *gi_ptr, struct gcov_filename *gf,
+ 
+   if (!summary_pos)
+     {
+-      memset (&prg, 0, sizeof (prg));
++      memset (pprg, 0, sizeof (*pprg));
+       summary_pos = eof_pos;
+     }
+ 
+-  error = merge_summary (gf->filename, run_counted, gi_ptr, &prg, this_prg,
++  error = merge_summary (gf->filename, run_counted, gi_ptr, pprg, this_prg,
+ 			 crc32, all_prg);
+   if (error == -1)
+     goto read_fatal;
+ 
+-  write_one_data (gi_ptr, &prg, eof_pos, summary_pos);
++  write_one_data (gi_ptr, pprg, eof_pos, summary_pos);
+   /* fall through */
+ 
+ read_fatal:;
++  GCOV_SUMMARY_FREE(pprg);
+   while (fn_buffer)
+     fn_buffer = free_fn_data (gi_ptr, fn_buffer, GCOV_COUNTERS);
+ 
+@@ -831,20 +862,32 @@ gcov_do_dump (struct gcov_info *list, int run_counted)
+   struct gcov_info *gi_ptr;
+   struct gcov_filename gf;
+   gcov_unsigned_t crc32;
+-  struct gcov_summary all_prg;
+-  struct gcov_summary this_prg;
+ 
+-  crc32 = compute_summary (list, &this_prg, &gf.max_length);
++  GCOV_SUMMARY_ALLOC(pall_prg);
++  if (!pall_prg) {
++    fprintf (stderr, "failed to alloc mem for summary!\n");
++    return;
++  }
++  GCOV_SUMMARY_ALLOC(pthis_prg);
++  if (!pthis_prg) {
++    fprintf (stderr, "failed to alloc mem for summary!\n");
++    GCOV_SUMMARY_FREE(pall_prg);
++    return;
++  }
++
++  crc32 = compute_summary (list, pthis_prg, &gf.max_length);
+ 
+   allocate_filename_struct (&gf);
+ #if !GCOV_LOCKED
+-  memset (&all_prg, 0, sizeof (all_prg));
++  memset (pall_prg, 0, sizeof (*pall_prg));
+ #endif
+ 
+   /* Now merge each file.  */
+   for (gi_ptr = list; gi_ptr; gi_ptr = gi_ptr->next)
+-    dump_one_gcov (gi_ptr, &gf, run_counted, crc32, &all_prg, &this_prg);
++    dump_one_gcov (gi_ptr, &gf, run_counted, crc32, pall_prg, pthis_prg);
+ 
++  GCOV_SUMMARY_FREE(pthis_prg);
++  GCOV_SUMMARY_FREE(pall_prg);
+   free (gf.filename);
+ }
+ 
+@@ -900,7 +943,11 @@ __gcov_init (struct gcov_info *info)
+ 		__gcov_master.root->prev = &__gcov_root;
+ 	      __gcov_master.root = &__gcov_root;
+ 	    }
+-	  atexit (gcov_exit);
++#if GCOV_CUSTOM_RTIO == 0
++    	  atexit (gcov_exit);
++#else
++        gcov_rtio_atexit (gcov_exit);
++#endif
+ 	}
+ 
+       info->next = __gcov_root.list;
+-- 
+2.13.5 (Apple Git-94)
+
