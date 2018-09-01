@@ -1,9 +1,13 @@
 %global bootstrap 1
 %global _program_prefix  %{esp32_target}-
 
+# strip for the target
+%global __strip %{_bindir}/%{esp32_target}-strip
+%global __objdump %{_bindir}/%{es32_target}-objdump
+
 Name:           esp32-gcc
 Version:        5.2.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Epoch:          0
 Summary:        GNU GCC for cross-compilation for %{esp32_target} target
 
@@ -56,6 +60,7 @@ Patch36:    907-x86-musl-support.patch
 Patch37:    908-arm-musl-support.patch
 Patch38:    909-aarch64-musl-support.patch
 Patch39:    039-isl-gcc.patch
+Patch40:    910-Fix-partial-template-specialization-syntax-in-wide-int.h.diff
 
 # Tools
 BuildRequires:  gcc-c++
@@ -113,6 +118,7 @@ source ./.cflags
         --disable-libquadmath \
         --disable-libquadmath-support \
         --disable-nls \
+	--disable-shared \
 	--enable-lto \
 	--enable-target-optspace \
 	--enable-threads=posix \
@@ -160,9 +166,10 @@ sed -i -e 's/^host_subdir[^$]\+/host_subdir = host-%{_host}/g' \
 %make_build DESTDIR=%{buildroot} install-gcc install-target-libgcc install-target-libstdc++-v3
 %endif
 
-# This is a crosstool
+# Remove unnessecary stuff
 rm -rf %{buildroot}%{_infodir}
 rm -rf %{buildroot}%{_mandir}/man7
+rm %{buildroot}%{_libexecdir}/gcc/%{esp32_target}/%{version}/*la
 
 
 
@@ -174,5 +181,9 @@ rm -rf %{buildroot}%{_mandir}/man7
 %{_mandir}/man1/%{_program_prefix}*
 
 %changelog
-* Tue Aug 28 2018 Dave Olsthoorn <dave@bewaar.me> - 5.2.0-1
+* Sat Sep 01 2018 Dave Olsthoorn <dave@bewaar.me> - 0:5.2.0-2
+- Add fix for template errors
+- disable shared objects
+
+* Tue Aug 28 2018 Dave Olsthoorn <dave@bewaar.me> - 0:5.2.0-1
 - Initial spec file
