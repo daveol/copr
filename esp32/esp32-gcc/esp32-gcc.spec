@@ -1,4 +1,4 @@
-%global bootstrap 1
+%global bootstrap 0
 %global _program_prefix  %{esp32_target}-
 
 # strip for the target
@@ -8,7 +8,7 @@
 Name:           esp32-gcc
 Version:        5.2.0
 Release:        2%{?dist}
-Epoch:          0
+Epoch:          1
 Summary:        GNU GCC for cross-compilation for %{esp32_target} target
 
 License:        GPLv2+ and GPLv3+ and LGPLv2+ and BSD
@@ -82,8 +82,30 @@ BuildRequires:  esp32-newlib
 
 Requires:       esp32-binutils
 
+Provides:       xtensa-esp32-elf-gcc = %{version}
+
 
 %description
+This is a Cross Compiling version of GNU GCC, which can be used to
+compile for the %{esp32_target} platform, instead of for the
+native %{_arch} platform.
+This package is based on the crosstool-NG xtensa-1.22.x release,
+which includes ESP32 target support.
+
+%if ! 0%{bootstrap}
+
+%package c++
+Summary:        Cross Compiling GNU GCC targeted at %{target}
+Group:          Development/Languages
+Requires:       %{name} = %{epoch}:%{version}-%{release}
+Provides:       xtensa-esp32-elf-gcc-c++ = %{version}
+
+%description c++
+This package contains the Cross Compiling version of g++, which can be used to
+compile c++ code for the %{target} platform, instead of for the native
+%{_arch} platform.
+%endif
+
 
 
 %prep
@@ -125,13 +147,13 @@ source ./.cflags
 %if 0%{bootstrap}
 	--enable-languages=c
 %else
+	--with-python-dir=share/%{esp32_target}/gcc-%{version}/python \
 	--enable-cxx-flags="-fno-rtti -ffunction-sections" \
 	--enable-languages=c,c++ \
 	--enable-gcov-custom-rtio \
 	--disable-libstdcxx-verbose
 %endif
 
-%if 0%{bootstrap}
 %make_build configure-gcc configure-libcpp configure-build-libiberty
 %make_build all-libcpp all-build-libiberty
 
@@ -149,10 +171,18 @@ source ./.cflags
 
 #weird fix
 sed -i -e 's/^host_subdir[^$]\+/host_subdir = host-%{_host}/g' \
-	$(find xtensa-esp32-elf -name Makefile)
+        $(find xtensa-esp32-elf -name Makefile)
+
 %make_build all-target-libgcc
-%else
-%make_build
+
+%if ! 0%{bootstrap}
+%make_build configure-target-libstdc++-v3
+
+#weird fix
+sed -i -e 's/^host_subdir[^$]\+/host_subdir = host-%{_host}/g' \
+	$(find xtensa-esp32-elf -name Makefile)
+
+%make_build all-target-libstdc++-v3
 %endif
 
 # Just to make sure
@@ -160,25 +190,46 @@ sed -i -e 's/^host_subdir[^$]\+/host_subdir = host-%{_host}/g' \
 
 
 %install
-%if 0%{bootstrap}
-%make_build DESTDIR=%{buildroot} install-gcc install-target-libgcc
-%else
-%make_build DESTDIR=%{buildroot} install-gcc install-target-libgcc install-target-libstdc++-v3
+%make_build DESTDIR=%{buildroot} \
+	install-gcc \
+	install-target-libgcc \
+%if ! 0%{bootstrap}
+	install-target-libstdc++-v3
 %endif
 
 # Remove unnessecary stuff
 rm -rf %{buildroot}%{_infodir}
 rm -rf %{buildroot}%{_mandir}/man7
-rm %{buildroot}%{_libexecdir}/gcc/%{esp32_target}/%{version}/*la
 
 
 
 %files
 %doc README
-%{_libdir}/gcc/%{esp32_target}
-%{_libexecdir}/gcc/%{esp32_target}
+%dir %{_libdir}/gcc
+%dir %{_libdir}/gcc/%{esp32_target}
+%{_libdir}/gcc/%{esp32_target}/%{version}
+%dir %{_libexecdir}/gcc
+%dir %{_libexecdir}/gcc/%{esp32_target}
+%{_libexecdir}/gcc/%{esp32_target}/%{version}
 %{_bindir}/%{_program_prefix}*
-%{_mandir}/man1/%{_program_prefix}*
+%{_mandir}/man1/%{_program_prefix}*.1.gz
+%if ! 0%{bootstrap}
+%{esp32_libdir}/*
+%exclude %{esp32_includedir}/c++
+%exclude %{_bindir}/%{_program_prefix}*c++
+%exclude %{_libexecdir}/gcc/%{esp32_target}/%{version}/cc1plus
+%exclude %{_mandir}/man1/%{_program_prefix}*++.1.gz
+%endif
+
+%if ! 0%{bootstrap}
+%files c++
+%{_bindir}/%{_program_prefix}*c++
+%{_mandir}/man1/%{_program_prefix}*++.1.gz
+%{_libexecdir}/gcc/%{esp32_target}/%{version}/cc1plus
+%{esp32_includedir}/c++
+%{_datadir}/%{esp32_target}/gcc-%{version}/python
+%endif
+
 
 %changelog
 * Sat Sep 01 2018 Dave Olsthoorn <dave@bewaar.me> - 0:5.2.0-2
